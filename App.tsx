@@ -1,20 +1,37 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+/* eslint-disable camelcase */
+import { StatusBar } from 'react-native'
+import { NativeBaseProvider } from 'native-base'
+import {
+  useFonts,
+  Karla_400Regular,
+  Karla_700Bold,
+} from '@expo-google-fonts/karla'
+
+import { THEME } from './src/theme'
+
+import { Loading } from '@components/Loading'
+import { Routes } from './src/routes'
+import { AuthContextProvider } from './src/contexts/AuthContext'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+  const [fontsLoaded] = useFonts({
+    Karla_400Regular,
+    Karla_700Bold,
+  })
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NativeBaseProvider theme={THEME}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent
+        />
+        <AuthContextProvider>
+          {fontsLoaded ? <Routes /> : <Loading />}
+        </AuthContextProvider>
+      </NativeBaseProvider>
+    </GestureHandlerRootView>
+  )
+}
