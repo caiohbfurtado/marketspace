@@ -4,16 +4,19 @@ import {
   StyledProps,
   Text,
 } from 'native-base'
+import { RefObject } from 'react'
 
 export type ButtonProps = IButtonProps & {
   title: string
   variant?: 'dark' | 'light' | 'default'
+  buttonRef?: RefObject<null>
 }
 
 export function Button({
   title,
   variant = 'default',
   width = 'full',
+  buttonRef,
   ...rest
 }: ButtonProps) {
   const getButtonProps = (pressed = false): StyledProps => {
@@ -36,6 +39,7 @@ export function Button({
 
   return (
     <NativeBaseButton
+      ref={buttonRef}
       w={width}
       h={11}
       alignItems="center"

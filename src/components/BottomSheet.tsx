@@ -8,7 +8,6 @@ import {
   Center,
   HStack,
   Heading,
-  Icon,
   Stack,
   VStack,
   useTheme,
@@ -22,12 +21,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import {
-  Modal,
-  TouchableOpacity,
-  View,
-  useWindowDimensions,
-} from 'react-native'
+import { Modal, TouchableOpacity, useWindowDimensions } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 type Props = {
@@ -45,7 +39,7 @@ export function BottomSheet({
 }: Props) {
   const bottomSheetRef = useRef<BottomSheetGorhom>(null)
   const { width } = useWindowDimensions()
-  const snapPoints = useMemo(() => ['25%', '50%', '75%'], [])
+  const snapPoints = useMemo(() => ['50%', '75%', '90%'], [])
   const [index, setIndex] = useState(-1)
   const { colors } = useTheme()
 

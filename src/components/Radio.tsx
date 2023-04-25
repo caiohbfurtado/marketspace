@@ -9,9 +9,10 @@ type Props = {
   options: Option[]
   onChange: () => void
   errorMessage?: string | null
+  value: string
 }
 
-export function Radio({ onChange, errorMessage, options }: Props) {
+export function Radio({ onChange, errorMessage, value, options }: Props) {
   return (
     <FormControl isInvalid={!!errorMessage} mb={8}>
       <RadioNativeBase.Group
@@ -19,6 +20,7 @@ export function Radio({ onChange, errorMessage, options }: Props) {
         accessibilityLabel="Tipo do produto"
         direction="row"
         onChange={onChange}
+        value={value ?? ''}
       >
         {options.map(({ label, value }) => (
           <VStack key={value} mr={4}>

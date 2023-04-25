@@ -1,88 +1,154 @@
+/* eslint-disable camelcase */
 import { useNavigation, useRoute } from '@react-navigation/native'
 import {
-  Box,
   Heading,
   HStack,
   ScrollView,
   Text,
   useTheme,
   VStack,
+  useToast,
 } from 'native-base'
-import {
-  ArrowLeft,
-  Bank,
-  Barcode,
-  CreditCard,
-  Money,
-  PencilSimpleLine,
-  Power,
-  QrCode,
-  Tag,
-  TrashSimple,
-} from 'phosphor-react-native'
+import { ArrowLeft, Tag } from 'phosphor-react-native'
 import { Badge } from '../components/Badge'
-import { Button } from '../components/Button'
 import { FixedButtons } from '../components/FixedButtons'
-import { Header } from '../components/Header'
 import { UserPhoto } from '../components/UserPhoto'
 import { AppNavigatorRoutesProps } from '../routes/app.routes'
+import * as ImagePicker from 'expo-image-picker'
+import { useAuth } from '../hooks/useAuth'
+import { useMemo, useState } from 'react'
+import { priceFormat } from '../utils/priceFormat'
+import { api } from '../services/api'
+import { AppError } from '../utils/AppError'
+import { PaymentMethodsKey, ProductDTO } from '../dtos/ProductDTO'
+import { PaymentMethodsList } from '../components/PaymentMethodsList'
+import { Carousel } from '../components/Carousel'
 
 type RouteParams = {
-  createAnnouncement: boolean
-  id: string
+  productInfo: {
+    images: ImagePicker.ImagePickerAsset[]
+    name: string
+    description: string
+    payment_methods: PaymentMethodsKey[]
+    accept_trade: boolean
+    is_new: boolean
+    price: number
+  }
+  reset: () => void
 }
 
 export function PreviewAnnouncement() {
   const route = useRoute()
-  const { createAnnouncement, id } = route.params as RouteParams
+  const { productInfo, reset } = route.params as RouteParams
   const navigation = useNavigation<AppNavigatorRoutesProps>()
   const { colors } = useTheme()
+  const {
+    accept_trade,
+    description,
+    images,
+    is_new,
+    name,
+    payment_methods,
+    price,
+  } = productInfo
+  const { user } = useAuth()
+  const toast = useToast()
+  const [isLoading, setIsLoading] = useState(false)
 
   function handleGoBack() {
     navigation.goBack()
   }
 
-  function handleEditAnnouncement() {
-    navigation.navigate('EditAnnouncement', { id })
+  const imagesUri = images.map((image) => image.uri)
+
+  const priceFormatted = useMemo(() => priceFormat(price), [price])
+
+  async function handleSubmit() {
+    try {
+      setIsLoading(true)
+      const newProduct = {
+        accept_trade,
+        description,
+        is_new,
+        name,
+        payment_methods,
+        price,
+      }
+      const response = await api.post<ProductDTO>('/products', newProduct)
+      const productId = response.data.id
+
+      const dataForm = new FormData()
+
+      images.forEach((photo, index) => {
+        const fileExtension = photo.uri.split('.').pop()
+        const photoFile = {
+          name: `product-${productId}-${index}.${fileExtension}`
+            .toLowerCase()
+            .replace(' ', '-'),
+          uri: photo.uri,
+          type: `${photo.type}/${fileExtension}`,
+        } as any
+
+        dataForm.append('images', photoFile)
+      })
+
+      dataForm.append('product_id', productId)
+      await api.post('/products/images', dataForm, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+
+      toast.show({
+        title: 'Produto cadastrado com sucesso!',
+        placement: 'top',
+        bgColor: 'green.500',
+        _title: {
+          textAlign: 'center',
+        },
+      })
+
+      reset()
+
+      navigation.navigate('MyAnnouncements')
+    } catch (error) {
+      const isAppError = error instanceof AppError
+      const title = isAppError
+        ? error.message
+        : 'Não foi possível criar o anúncio. Tente novamente mais tarde'
+
+      toast.show({
+        title,
+        placement: 'top',
+        bgColor: 'red.500',
+        _title: {
+          textAlign: 'center',
+        },
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <VStack flex={1}>
-      {createAnnouncement && (
-        <VStack
-          position="fixed"
-          h={32}
-          bg="blue.300"
-          alignItems="center"
-          justifyContent="flex-end"
-          pb={4}
-        >
-          <Heading color="gray.700" fontFamily="heading" fontSize="md" mb={0.5}>
-            Pré visualização do anúncio
-          </Heading>
-          <Text color="gray.700" fontFamily="body" fontSize="md">
-            É assim que seu produto vai aparecer!
-          </Text>
-        </VStack>
-      )}
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        flex={1}
-        {...(!createAnnouncement && { pt: 16 })}
+      <VStack
+        position="fixed"
+        h={32}
+        bg="blue.300"
+        alignItems="center"
+        justifyContent="flex-end"
+        pb={4}
       >
-        <VStack pb={createAnnouncement ? 6 : 20}>
-          {!createAnnouncement && (
-            <VStack px={6} pb={3}>
-              <Header
-                hasBackButton
-                rightIcon={PencilSimpleLine}
-                onPressRightIcon={handleEditAnnouncement}
-              />
-            </VStack>
-          )}
+        <Heading color="gray.700" fontFamily="heading" fontSize="md" mb={0.5}>
+          Pré visualização do anúncio
+        </Heading>
+        <Text color="gray.700" fontFamily="body" fontSize="md">
+          É assim que seu produto vai aparecer!
+        </Text>
+      </VStack>
 
-          <Box h={280} w="full" bg="black" />
+      <ScrollView showsVerticalScrollIndicator={false} flex={1}>
+        <VStack pb={6}>
+          <Carousel imagesUri={imagesUri} productName={name} />
 
           <VStack px={6} py={5}>
             <HStack alignItems="center">
@@ -91,18 +157,19 @@ export function PreviewAnnouncement() {
                 borderWidth={2}
                 borderColor="blue.300"
                 alt="Imagem do usuário"
+                photo={`http://127.0.0.1:3333/images/${user.avatar}`}
               />
               <Text fontFamily="body" fontSize="sm" color="gray.100" ml={2}>
-                Maria Gomes
+                {user.name}
               </Text>
             </HStack>
 
             <VStack my={6}>
-              <Badge title="used" />
+              <Badge title={is_new ? 'new' : 'used'} />
 
               <HStack alignItems="center" justifyContent="space-between" my={2}>
                 <Heading fontFamily="heading" fontSize="xl" color="gray.100">
-                  Luminária pendente
+                  {name}
                 </Heading>
 
                 <HStack alignItems="center">
@@ -116,16 +183,13 @@ export function PreviewAnnouncement() {
                     R$
                   </Text>
                   <Text fontFamily="heading" fontSize="xl" color="blue.300">
-                    45,00
+                    {priceFormatted}
                   </Text>
                 </HStack>
               </HStack>
 
               <Text fontFamily="body" color="gray.200" fontSize="sm">
-                Lorem ipsum dolor sit, amet consectetur adipisicing elit. Libero
-                adipisci consequuntur, et impedit officiis totam natus quibusdam
-                quod architecto odit dolore repellat consectetur pariatur quas
-                tempore non maiores rem iure.
+                {description}
               </Text>
             </VStack>
 
@@ -134,7 +198,7 @@ export function PreviewAnnouncement() {
                 Aceita troca?
               </Heading>
               <Text color="gray.200" fontFamily="body" fontSize="sm" ml={2}>
-                Não
+                {accept_trade ? 'Sim' : 'Não'}
               </Text>
             </HStack>
 
@@ -144,76 +208,29 @@ export function PreviewAnnouncement() {
               </Heading>
 
               <VStack my={2}>
-                <HStack alignItems="center">
-                  <Barcode color={colors.gray[100]} size={18} />
-                  <Text fontFamily="body" fontSize="sm" color="gray.200" ml={2}>
-                    Boleto
-                  </Text>
-                </HStack>
-
-                <HStack alignItems="center">
-                  <QrCode color={colors.gray[100]} size={18} />
-                  <Text fontFamily="body" fontSize="sm" color="gray.200" ml={2}>
-                    Pix
-                  </Text>
-                </HStack>
-
-                <HStack alignItems="center">
-                  <Money color={colors.gray[100]} size={18} />
-                  <Text fontFamily="body" fontSize="sm" color="gray.200" ml={2}>
-                    Dinheiro
-                  </Text>
-                </HStack>
-
-                <HStack alignItems="center">
-                  <CreditCard color={colors.gray[100]} size={18} />
-                  <Text fontFamily="body" fontSize="sm" color="gray.200" ml={2}>
-                    Cartão de Crédito
-                  </Text>
-                </HStack>
-
-                <HStack alignItems="center">
-                  <Bank color={colors.gray[100]} size={18} />
-                  <Text fontFamily="body" fontSize="sm" color="gray.200" ml={2}>
-                    Depósito Bancário
-                  </Text>
-                </HStack>
+                {payment_methods.map((method) => (
+                  <PaymentMethodsList key={method} method={method} />
+                ))}
               </VStack>
             </VStack>
-
-            {!createAnnouncement && (
-              <VStack mt={6}>
-                <Button
-                  title="Desativar anúncio"
-                  variant="dark"
-                  leftIcon={<Power size={16} color={colors.gray[600]} />}
-                />
-                <Button
-                  title="Excluir anúncio"
-                  variant="light"
-                  leftIcon={<TrashSimple size={16} color={colors.gray[300]} />}
-                  mt={2}
-                />
-              </VStack>
-            )}
           </VStack>
         </VStack>
       </ScrollView>
 
-      {createAnnouncement && (
-        <FixedButtons
-          leftButton={{
-            title: 'Voltar e editar',
-            variant: 'light',
-            leftIcon: <ArrowLeft size={16} color={colors.gray[200]} />,
-            onPress: handleGoBack,
-          }}
-          rightButton={{
-            title: 'Publicar',
-            leftIcon: <Tag size={16} color={colors.gray[600]} />,
-          }}
-        />
-      )}
+      <FixedButtons
+        leftButton={{
+          title: 'Voltar e editar',
+          variant: 'light',
+          leftIcon: <ArrowLeft size={16} color={colors.gray[200]} />,
+          onPress: handleGoBack,
+        }}
+        rightButton={{
+          title: 'Publicar',
+          leftIcon: <Tag size={16} color={colors.gray[600]} />,
+          onPress: handleSubmit,
+          isLoading,
+        }}
+      />
     </VStack>
   )
 }

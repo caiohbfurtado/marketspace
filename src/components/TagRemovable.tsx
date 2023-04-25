@@ -1,40 +1,65 @@
-import { IPressableProps, Pressable, Text, useTheme } from 'native-base'
-import { XCircle } from 'phosphor-react-native'
-import { TouchableOpacity } from 'react-native-gesture-handler'
+import { Checkbox } from 'native-base'
 
-type Props = IPressableProps & {
-  title: string
-  active: boolean
+type Option = {
+  label: string
+  value: string
 }
 
-export function TagRemovable({ title, active, ...rest }: Props) {
-  const { colors } = useTheme()
+type Props = {
+  options: Option[]
+  onChange: () => void
+  value: string[]
+}
+
+export function TagRemovable({ options, onChange, value }: Props) {
   return (
-    <Pressable
-      backgroundColor={active ? 'blue.300' : 'gray.500'}
-      px={4}
-      py={1.5}
-      borderRadius="full"
-      flexDirection="row"
-      alignItems="center"
-      mr={2}
-      {...(active && { pr: 1.5 })}
-      {...rest}
-    >
-      <Text
-        color={active ? 'white' : 'gray.300'}
-        fontSize="sm"
-        textTransform="uppercase"
-        fontFamily="heading"
-        mr={active ? 1.5 : 0}
-      >
-        {title}
-      </Text>
-      {active && (
-        <TouchableOpacity>
-          <XCircle color={colors.white} weight="fill" size={18} />
-        </TouchableOpacity>
-      )}
-    </Pressable>
+    <Checkbox.Group flexDirection="row" value={value} onChange={onChange}>
+      {options.map(({ value, label }) => (
+        <Checkbox
+          key={value}
+          mr={2}
+          backgroundColor="transparent"
+          borderColor="transparent"
+          value={value}
+          _checked={{
+            backgroundColor: 'trasparent',
+            borderColor: 'transparent',
+            _stack: {
+              backgroundColor: 'blue.500',
+            },
+            _text: {
+              color: 'white',
+            },
+          }}
+          _icon={{
+            display: 'none',
+          }}
+          _unchecked={{
+            backgroundColor: 'trasparent',
+            borderColor: 'transparent',
+          }}
+          _pressed={{
+            backgroundColor: 'trasparent',
+            borderColor: 'transparent',
+          }}
+          _stack={{
+            backgroundColor: 'gray.500',
+            borderRadius: 'full',
+            h: 8,
+            w: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          _text={{
+            color: 'gray.300',
+            fontFamily: 'heading',
+            position: 'absolute',
+          }}
+          mb={2}
+        >
+          {label}
+        </Checkbox>
+      ))}
+    </Checkbox.Group>
   )
 }

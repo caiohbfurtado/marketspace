@@ -19,7 +19,7 @@ export function EditAnnouncement() {
   const { navigate } = useNavigation<AppNavigatorRoutesProps>()
 
   function handleSubmit() {
-    navigate('PreviewAnnouncement', { createAnnouncement: true })
+    navigate('PreviewAnnouncement')
   }
 
   function renderTitle(title: string) {

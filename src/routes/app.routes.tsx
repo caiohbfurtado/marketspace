@@ -7,25 +7,40 @@ import { House, Tag, SignOut } from 'phosphor-react-native'
 import { Fragment } from 'react'
 import { Platform, TouchableOpacity } from 'react-native'
 import { CreateAnnouncement } from '../screens/CreateAnnouncement'
+import * as ImagePicker from 'expo-image-picker'
 
 import { Home } from '../screens/Home'
 import { MyAnnouncements } from '../screens/MyAnnouncements'
 import { PreviewAnnouncement } from '../screens/PreviewAnnouncement'
 import { EditAnnouncement } from '../screens/EditAnnouncement'
 import { useAuth } from '../hooks/useAuth'
+import { MyAnnouncement } from '../screens/MyAnnouncement'
 
 const { Navigator, Screen } = createBottomTabNavigator()
+
+type ProductInfoProps = {
+  images: ImagePicker.ImagePickerAsset[]
+  name: string
+  description: string
+  payment_methods: string[]
+  accept_trade: boolean
+  is_new: boolean
+  price: number
+}
 
 type AppRoutesProps = {
   Home: undefined
   MyAnnouncements: undefined
   CreateAnnouncement: undefined
   PreviewAnnouncement: {
-    createAnnouncement: boolean
-    id?: string
+    productInfo: ProductInfoProps
+    reset: () => void
   }
   EditAnnouncement: {
     id: string
+  }
+  MyAnnouncement: {
+    productId: string
   }
 }
 
@@ -52,6 +67,7 @@ export function AppRoutes() {
           paddingTop: sizes[6],
         },
       }}
+      backBehavior="history"
     >
       <Screen
         name="Home"
@@ -96,6 +112,16 @@ export function AppRoutes() {
       <Screen
         name="CreateAnnouncement"
         component={CreateAnnouncement}
+        options={{
+          tabBarButton: () => null,
+          tabBarStyle: {
+            display: 'none',
+          },
+        }}
+      />
+      <Screen
+        name="MyAnnouncement"
+        component={MyAnnouncement}
         options={{
           tabBarButton: () => null,
           tabBarStyle: {

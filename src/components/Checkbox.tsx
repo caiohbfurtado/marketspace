@@ -7,16 +7,17 @@ type Option = {
 
 type Props = {
   options: Option[]
-  onChange: () => void
+  onChange: (isSelected: boolean) => void
   errorMessage?: string | null
+  value: string[]
 }
-
-export function Checkbox({ options, onChange, errorMessage }: Props) {
+export function Checkbox({ options, onChange, value, errorMessage }: Props) {
   return (
     <FormControl isInvalid={!!errorMessage} mb={8} mt={3}>
       <CheckboxNativeBase.Group
         accessibilityLabel="Escolha os meios de pagamento válidos"
         onChange={onChange}
+        value={value ?? []}
       >
         {options.map(({ label, value }) => (
           <CheckboxNativeBase
