@@ -18,11 +18,14 @@ type ProductImages = {
 
 type UserAvatarProps = {
   avatar: string
+  name?: string
+  tel?: number
 }
 
 export type ProductDTO = {
   accept_trade: boolean
   user: UserAvatarProps
+  user_id?: string
   id: string
   is_active: boolean
   is_new: boolean

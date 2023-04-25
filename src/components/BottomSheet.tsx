@@ -39,7 +39,7 @@ export function BottomSheet({
 }: Props) {
   const bottomSheetRef = useRef<BottomSheetGorhom>(null)
   const { width } = useWindowDimensions()
-  const snapPoints = useMemo(() => ['50%', '75%', '90%'], [])
+  const snapPoints = useMemo(() => ['60%', '75%', '90%'], [])
   const [index, setIndex] = useState(-1)
   const { colors } = useTheme()
 
@@ -90,6 +90,8 @@ export function BottomSheet({
       : renderFooterProp
   }
 
+  if (!isOpen && index === -1) return null
+
   return (
     <Modal animationType="fade" visible={isOpen && index !== -1} transparent>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -121,17 +123,22 @@ export function BottomSheet({
               contentContainerStyle={{
                 backgroundColor: colors.white,
                 flex: 1,
+                marginTop: 48,
               }}
               style={{
                 backgroundColor: colors.white,
                 width: width - 40,
+                flex: 1,
               }}
               horizontal={false}
+              scrollEnabled
+              nestedScrollEnabled
             >
               {children}
             </BottomSheetScrollView>
           </VStack>
         </BottomSheetGorhom>
+
         {renderFooterProp && (
           <Stack w="full" px={6} position="absolute" bottom={8}>
             {renderFooter()}

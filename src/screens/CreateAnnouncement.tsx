@@ -115,7 +115,7 @@ export function CreateAnnouncement() {
         reset({
           accept_trade: false,
           description: '',
-          is_new: '',
+          is_new: '' as 'is_new',
           name: '',
           payment_methods: [],
           price: undefined,
@@ -174,7 +174,6 @@ export function CreateAnnouncement() {
       const title = isAppError
         ? error.message
         : 'Não foi possível adicionar a imagem. Tente novamente'
-      console.log(title)
 
       toast.show({
         title,
@@ -354,7 +353,7 @@ export function CreateAnnouncement() {
             leftButton={{
               title: 'Cancelar',
               variant: 'light',
-              onPress: () => reset({ is_new: '' }),
+              onPress: () => reset({ is_new: '' as 'is_new' }),
             }}
             rightButton={{
               title: 'Avançar',

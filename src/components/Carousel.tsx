@@ -1,13 +1,18 @@
-import { Box, Center, FlatList, HStack, Image } from 'native-base'
+import { Box, Center, FlatList, HStack, Image, Text } from 'native-base'
 import { useRef, useState } from 'react'
 import { ViewToken, useWindowDimensions } from 'react-native'
 
 type Props = {
   imagesUri: string[]
   productName: string
+  deactivate?: boolean
 }
 
-export function Carousel({ imagesUri, productName }: Props) {
+export function Carousel({
+  imagesUri,
+  productName,
+  deactivate = false,
+}: Props) {
   const { width } = useWindowDimensions()
   const [inViewPort, setInViewPort] = useState(0)
 
@@ -58,6 +63,21 @@ export function Carousel({ imagesUri, productName }: Props) {
           />
         ))}
       </HStack>
+
+      {deactivate && (
+        <Center
+          position="absolute"
+          backgroundColor="gray.100"
+          w={width}
+          height={280}
+          flex={1}
+          opacity={0.6}
+        >
+          <Text color="gray.700" fontFamily="heading" fontSize="md">
+            ANÚNCIO DESATIVADO
+          </Text>
+        </Center>
+      )}
     </Center>
   )
 }

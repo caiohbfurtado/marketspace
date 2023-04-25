@@ -15,6 +15,7 @@ import { PreviewAnnouncement } from '../screens/PreviewAnnouncement'
 import { EditAnnouncement } from '../screens/EditAnnouncement'
 import { useAuth } from '../hooks/useAuth'
 import { MyAnnouncement } from '../screens/MyAnnouncement'
+import { Announcement } from '../screens/Announcement'
 
 const { Navigator, Screen } = createBottomTabNavigator()
 
@@ -40,6 +41,9 @@ type AppRoutesProps = {
     id: string
   }
   MyAnnouncement: {
+    productId: string
+  }
+  Announcement: {
     productId: string
   }
 }
@@ -122,6 +126,16 @@ export function AppRoutes() {
       <Screen
         name="MyAnnouncement"
         component={MyAnnouncement}
+        options={{
+          tabBarButton: () => null,
+          tabBarStyle: {
+            display: 'none',
+          },
+        }}
+      />
+      <Screen
+        name="Announcement"
+        component={Announcement}
         options={{
           tabBarButton: () => null,
           tabBarStyle: {

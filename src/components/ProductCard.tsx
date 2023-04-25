@@ -1,4 +1,4 @@
-import { Box, HStack, Image, Text, VStack } from 'native-base'
+import { Box, Center, HStack, Image, Text, VStack } from 'native-base'
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { Badge } from './Badge'
 import { UserPhoto } from './UserPhoto'
@@ -20,7 +20,7 @@ export function ProductCard({ product, isUser = false, ...rest }: Props) {
     <TouchableOpacity style={{ width: 160, marginBottom: 24 }} {...rest}>
       <Image
         source={{
-          uri: 'https://cdn.shoppub.io/cdn-cgi/image/w=1000,h=1000,q=80,f=auto/brogan/media/uploads/produtos/foto/skcjyjvc/sapato-masculino-derby-alava-conhaque-1.webp',
+          uri: `http://127.50.100.1:3333/images/${product.product_images[0].path}`,
         }}
         w={40}
         h={24}
@@ -45,7 +45,12 @@ export function ProductCard({ product, isUser = false, ...rest }: Props) {
       </Box>
 
       <VStack ml={1} mt={1}>
-        <Text fontSize="sm" color="gray.200" fontFamily="body">
+        <Text
+          fontSize="sm"
+          color="gray.200"
+          fontFamily="body"
+          numberOfLines={1}
+        >
           {product?.name}
         </Text>
 
@@ -58,6 +63,21 @@ export function ProductCard({ product, isUser = false, ...rest }: Props) {
           </Text>
         </HStack>
       </VStack>
+
+      {!product.is_active && isUser && (
+        <Center
+          position="absolute"
+          backgroundColor="gray.100"
+          w={40}
+          h={24}
+          opacity={0.6}
+          borderRadius={6}
+        >
+          <Text color="gray.700" fontFamily="heading" fontSize="xs">
+            ANÚNCIO DESATIVADO
+          </Text>
+        </Center>
+      )}
     </TouchableOpacity>
   )
 }

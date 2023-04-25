@@ -8,6 +8,7 @@ import {
   FlatList,
   Divider,
   Pressable,
+  useToast,
 } from 'native-base'
 import {
   ArrowRight,
@@ -30,6 +31,7 @@ import { ProductDTO } from '../dtos/ProductDTO'
 import { api } from '../services/api'
 import { Loading } from '../components/Loading'
 import { Input } from '../components/Input'
+import { AppError } from '../utils/AppError'
 
 type FormDataProps = {
   is_new: ('is_new' | 'is_not_new')[]
@@ -40,10 +42,12 @@ type FormDataProps = {
 
 export function Home() {
   const { colors, space } = useTheme()
+  const toast = useToast()
   const { navigate } = useNavigation<AppNavigatorRoutesProps>()
   const [isOpenBottomSheet, setIsOpenBottomSheet] = useState(false)
   const { control, handleSubmit, reset } = useForm<FormDataProps>({})
   const [products, setProducts] = useState<ProductDTO[]>([])
+  const [myAnnouncements, setMyAnnouncements] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingReset, setIsLoadingReset] = useState(false)
   const [isLoadingSearch, setIsLoadingSearch] = useState(false)
@@ -65,7 +69,26 @@ export function Home() {
       setIsLoading(true)
       const response = await api.get<ProductDTO[]>('/products')
       setProducts(response.data)
+
+      const myAnnouncementsResponse = await api.get<ProductDTO[]>(
+        '/users/products',
+      )
+      setMyAnnouncements(myAnnouncementsResponse.data.length)
     } catch (error) {
+      console.log({ error })
+      const isAppError = error instanceof AppError
+      const title = isAppError
+        ? error.message
+        : 'Não foi possível carregar os produtos. Tente novamente mais tarde.'
+
+      toast.show({
+        title,
+        placement: 'top',
+        bgColor: 'red.500',
+        _title: {
+          textAlign: 'center',
+        },
+      })
     } finally {
       setIsLoading(false)
     }
@@ -137,6 +160,10 @@ export function Home() {
     }, 200)
   }
 
+  function handleGoToAnnouncement(id: string) {
+    navigate('Announcement', { productId: id })
+  }
+
   if (isLoading) return <Loading />
 
   function renderHomeHeader() {
@@ -162,10 +189,10 @@ export function Home() {
 
               <VStack flex={1} ml={4}>
                 <Heading fontFamily="heading" fontSize="xl" color="gray.200">
-                  4
+                  {myAnnouncements}
                 </Heading>
                 <Text fontFamily="body" fontSize="xs" color="gray.200">
-                  anúncios salvos
+                  anúncios
                 </Text>
               </VStack>
 
@@ -229,7 +256,12 @@ export function Home() {
     <>
       <FlatList
         data={products}
-        renderItem={({ item }) => <ProductCard product={item} />}
+        renderItem={({ item }) => (
+          <ProductCard
+            onPress={() => handleGoToAnnouncement(item.id)}
+            product={item}
+          />
+        )}
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
@@ -263,7 +295,7 @@ export function Home() {
         )}
       >
         <VStack flex={1}>
-          <HStack alignItems="center" mt={6}>
+          <HStack alignItems="center">
             <Controller
               name="name"
               control={control}

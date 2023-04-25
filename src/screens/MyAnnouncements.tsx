@@ -38,6 +38,7 @@ export function MyAnnouncements() {
 
   useFocusEffect(
     useCallback(() => {
+      setSelectValue('todos')
       getAnnouncementsByStatus()
     }, []),
   )

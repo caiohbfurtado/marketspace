@@ -150,7 +150,11 @@ export function MyAnnouncement() {
             />
           </VStack>
 
-          <Carousel productName={productInfo.name} imagesUri={imagesUri} />
+          <Carousel
+            productName={productInfo.name}
+            imagesUri={imagesUri}
+            deactivate={!productInfo.is_active}
+          />
 
           <VStack px={6} py={5}>
             <HStack alignItems="center">
@@ -219,9 +223,9 @@ export function MyAnnouncement() {
             <VStack mt={6}>
               <Button
                 title={`${
-                  productInfo.is_active ? 'Desativar' : 'Ativar'
+                  productInfo.is_active ? 'Desativar' : 'Retivar'
                 } anúncio`}
-                variant="dark"
+                variant={productInfo.is_active ? 'dark' : 'default'}
                 leftIcon={<Power size={16} color={colors.gray[600]} />}
                 onPress={handleUpdateProductStatus}
                 isLoading={isLoadingButtonDeactivate}
