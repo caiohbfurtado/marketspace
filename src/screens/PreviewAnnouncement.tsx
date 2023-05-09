@@ -23,9 +23,11 @@ import { AppError } from '../utils/AppError'
 import { PaymentMethodsKey, ProductDTO } from '../dtos/ProductDTO'
 import { PaymentMethodsList } from '../components/PaymentMethodsList'
 import { Carousel } from '../components/Carousel'
+import { PhotoInfo } from './CreateAnnouncement'
 
 type RouteParams = {
   productInfo: {
+    id?: string
     images: ImagePicker.ImagePickerAsset[]
     name: string
     description: string
@@ -35,11 +37,20 @@ type RouteParams = {
     price: number
   }
   reset: () => void
+  removedImages: string[]
+  isNewProduct: boolean
+  imagesUri: PhotoInfo[]
 }
 
 export function PreviewAnnouncement() {
   const route = useRoute()
-  const { productInfo, reset } = route.params as RouteParams
+  const {
+    productInfo,
+    reset,
+    removedImages,
+    isNewProduct,
+    imagesUri: imagesUriProp,
+  } = route.params as RouteParams
   const navigation = useNavigation<AppNavigatorRoutesProps>()
   const { colors } = useTheme()
   const {
@@ -59,7 +70,9 @@ export function PreviewAnnouncement() {
     navigation.goBack()
   }
 
-  const imagesUri = images.map((image) => image.uri)
+  const imagesUri = imagesUriProp.map((image) =>
+    image.isLocal ? image.path : `${api.defaults.baseURL}/images/${image.path}`,
+  )
 
   const priceFormatted = useMemo(() => priceFormat(price), [price])
 
@@ -74,39 +87,81 @@ export function PreviewAnnouncement() {
         payment_methods,
         price,
       }
-      const response = await api.post<ProductDTO>('/products', newProduct)
-      const productId = response.data.id
 
-      const dataForm = new FormData()
+      if (isNewProduct) {
+        const response = await api.post<ProductDTO>('/products', newProduct)
+        const productId = response.data.id
 
-      images.forEach((photo, index) => {
-        const fileExtension = photo.uri.split('.').pop()
-        const photoFile = {
-          name: `product-${productId}-${index}.${fileExtension}`
-            .toLowerCase()
-            .replace(' ', '-'),
-          uri: photo.uri,
-          type: `${photo.type}/${fileExtension}`,
-        } as any
+        const dataForm = new FormData()
 
-        dataForm.append('images', photoFile)
-      })
+        images.forEach((photo, index) => {
+          const fileExtension = photo.uri.split('.').pop()
+          const photoFile = {
+            name: `product-${productId}-${index}.${fileExtension}`
+              .toLowerCase()
+              .replace(' ', '-'),
+            uri: photo.uri,
+            type: `${photo.type}/${fileExtension}`,
+          } as any
 
-      dataForm.append('product_id', productId)
-      await api.post('/products/images', dataForm, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+          dataForm.append('images', photoFile)
+        })
 
-      toast.show({
-        title: 'Produto cadastrado com sucesso!',
-        placement: 'top',
-        bgColor: 'green.500',
-        _title: {
-          textAlign: 'center',
-        },
-      })
+        dataForm.append('product_id', productId)
+        await api.post('/products/images', dataForm, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
 
-      reset()
+        toast.show({
+          title: 'Produto cadastrado com sucesso!',
+          placement: 'top',
+          bgColor: 'green.500',
+          _title: {
+            textAlign: 'center',
+          },
+        })
+        reset()
+      } else {
+        if (removedImages.length > 0) {
+          const productImagesIds = { productImagesIds: removedImages }
+          await api.delete('/products/images', { data: productImagesIds })
+        }
+        const productId = productInfo.id!
+
+        await api.put<ProductDTO>(`/products/${productId}`, newProduct)
+
+        const dataForm = new FormData()
+
+        if (images.length > 0) {
+          images.forEach((photo, index) => {
+            const fileExtension = photo.uri.split('.').pop()
+            const photoFile = {
+              name: `product-${productId}-${index}.${fileExtension}`
+                .toLowerCase()
+                .replace(' ', '-'),
+              uri: photo.uri,
+              type: `${photo.type}/${fileExtension}`,
+            } as any
+
+            dataForm.append('images', photoFile)
+          })
+
+          dataForm.append('product_id', productId)
+          await api.post('/products/images', dataForm, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+        }
+
+        toast.show({
+          title: 'Produto editado com sucesso!',
+          placement: 'top',
+          bgColor: 'green.500',
+          _title: {
+            textAlign: 'center',
+          },
+        })
+        reset()
+      }
 
       navigation.navigate('MyAnnouncements')
     } catch (error) {
@@ -157,7 +212,7 @@ export function PreviewAnnouncement() {
                 borderWidth={2}
                 borderColor="blue.300"
                 alt="Imagem do usuário"
-                photo={`http://127.0.0.1:3333/images/${user.avatar}`}
+                photo={`${api.defaults.baseURL}/images/${user.avatar}`}
               />
               <Text fontFamily="body" fontSize="sm" color="gray.100" ml={2}>
                 {user.name}
@@ -168,7 +223,13 @@ export function PreviewAnnouncement() {
               <Badge title={is_new ? 'new' : 'used'} />
 
               <HStack alignItems="center" justifyContent="space-between" my={2}>
-                <Heading fontFamily="heading" fontSize="xl" color="gray.100">
+                <Heading
+                  fontFamily="heading"
+                  fontSize="xl"
+                  color="gray.100"
+                  mr={1}
+                  flexShrink={1}
+                >
                   {name}
                 </Heading>
 

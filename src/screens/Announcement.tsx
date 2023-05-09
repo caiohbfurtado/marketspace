@@ -23,6 +23,7 @@ import { Loading } from '../components/Loading'
 import { Carousel } from '../components/Carousel'
 import { PaymentMethodsList } from '../components/PaymentMethodsList'
 import { AppNavigatorRoutesProps } from '../routes/app.routes'
+import { Linking } from 'react-native'
 
 type RouteParams = {
   productId: string
@@ -45,7 +46,7 @@ export function Announcement() {
       setProductInfo(response.data)
       setImagesUri(
         response.data.product_images.map(
-          ({ path }) => `http://127.0.0.1:3333/images/${path}`,
+          ({ path }) => `${api.defaults.baseURL}/images/${path}`,
         ),
       )
     } catch (error) {
@@ -77,6 +78,25 @@ export function Announcement() {
     [productInfo.price],
   )
 
+  const handlePress = useCallback(async () => {
+    const url = `https://wa.me/55${productInfo.user.tel}?text=Olá, ${productInfo.user.name}!\nVi seu produto ${productInfo.name} no marketspace e me interessei em comprá-lo!`
+    const supported = await Linking.canOpenURL(url)
+
+    if (supported) {
+      await Linking.openURL(url)
+    } else {
+      toast.show({
+        title:
+          'Não foi possível mandar uma mensagem para este usuário. Tente novamente mais tarde',
+        placement: 'top',
+        bgColor: 'red.500',
+        _text: {
+          textAlign: 'center',
+        },
+      })
+    }
+  }, [productInfo, toast])
+
   if (isLoadingInfo) return <Loading />
 
   return (
@@ -99,7 +119,7 @@ export function Announcement() {
                 borderWidth={2}
                 borderColor="blue.300"
                 alt="Imagem do usuário"
-                photo={`http://127.0.0.1:3333/images/${productInfo.user.avatar}`}
+                photo={`${api.defaults.baseURL}/images/${productInfo.user.avatar}`}
               />
               <Text fontFamily="body" fontSize="sm" color="gray.100" ml={2}>
                 {productInfo.user.name}
@@ -185,6 +205,7 @@ export function Announcement() {
           }
           mt={2}
           w="50%"
+          onPress={handlePress}
         />
       </HStack>
     </VStack>

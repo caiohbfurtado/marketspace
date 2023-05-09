@@ -5,15 +5,15 @@ import { useAuth } from '../hooks/useAuth'
 import { AppNavigatorRoutesProps } from '../routes/app.routes'
 import { Button } from './Button'
 import { UserPhoto } from './UserPhoto'
-import { memo } from 'react'
+import { api } from '../services/api'
 
-export function HomeHeaderComponent() {
+export function HomeHeader() {
   const { colors } = useTheme()
   const { navigate } = useNavigation<AppNavigatorRoutesProps>()
   const { user } = useAuth()
 
   function handleGoToCreateAnnouncement() {
-    navigate('CreateAnnouncement')
+    navigate('CreateAnnouncement', { isNewProduct: true })
   }
 
   return (
@@ -24,7 +24,7 @@ export function HomeHeaderComponent() {
           borderWidth={2}
           borderColor="blue.300"
           alt="Foto do usuário"
-          photo={`http://127.0.0.1:3333/images/${user.avatar}`}
+          photo={`${api.defaults.baseURL}/images/${user.avatar}`}
         />
 
         <VStack ml={3}>
@@ -47,5 +47,3 @@ export function HomeHeaderComponent() {
     </HStack>
   )
 }
-
-export const HomeHeader = memo(HomeHeaderComponent)

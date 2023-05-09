@@ -64,10 +64,10 @@ export function Home() {
     )
   }
 
-  async function getAllProducts() {
+  const getAllProducts = useCallback(async () => {
     try {
       setIsLoading(true)
-      const response = await api.get<ProductDTO[]>('/products')
+      const response = await api.get<ProductDTO[]>('/products/')
       setProducts(response.data)
 
       const myAnnouncementsResponse = await api.get<ProductDTO[]>(
@@ -92,12 +92,12 @@ export function Home() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast])
 
   useFocusEffect(
     useCallback(() => {
       getAllProducts()
-    }, []),
+    }, [getAllProducts]),
   )
 
   async function handleSearchProduct(data: FormDataProps) {
@@ -122,7 +122,7 @@ export function Home() {
         ? data?.payment_methods
             .map(
               (method, index) =>
-                `${index !== 0 && '&'}payment_methods=${method}`,
+                `${index !== 0 ? '&' : ''}payment_methods=${method}`,
             )
             .join('')
         : ''
@@ -135,11 +135,13 @@ export function Home() {
       ]
         .filter((value) => value)
         .join('&')
+      console.log(myQuery)
 
       const response = await api.get<ProductDTO[]>(`/products/?${myQuery}`)
 
       setProducts(response.data)
     } catch (error) {
+      console.log(error)
     } finally {
       setIsOpenBottomSheet(false)
       setIsLoadingSearch(false)
@@ -153,8 +155,8 @@ export function Home() {
       reset({
         accept_trade: undefined,
         is_new: [],
-        name: undefined,
-        payment_methods: undefined,
+        name: '',
+        payment_methods: [],
       })
       setIsLoadingReset(false)
     }, 200)

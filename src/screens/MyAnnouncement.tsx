@@ -1,5 +1,9 @@
 /* eslint-disable camelcase */
-import { useNavigation, useRoute } from '@react-navigation/native'
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native'
 import {
   Heading,
   HStack,
@@ -15,7 +19,7 @@ import { Badge } from '../components/Badge'
 import { UserPhoto } from '../components/UserPhoto'
 import { AppNavigatorRoutesProps } from '../routes/app.routes'
 import { useAuth } from '../hooks/useAuth'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { priceFormat } from '../utils/priceFormat'
 import { api } from '../services/api'
 import { AppError } from '../utils/AppError'
@@ -53,7 +57,7 @@ export function MyAnnouncement() {
       setProductInfo(response.data)
       setImagesUri(
         response.data.product_images.map(
-          ({ path }) => `http://127.0.0.1:3333/images/${path}`,
+          ({ path }) => `${api.defaults.baseURL}/images/${path}`,
         ),
       )
     } catch (error) {
@@ -62,9 +66,11 @@ export function MyAnnouncement() {
     }
   }, [productId])
 
-  useEffect(() => {
-    getProductInfo()
-  }, [getProductInfo])
+  useFocusEffect(
+    useCallback(() => {
+      getProductInfo()
+    }, [getProductInfo]),
+  )
 
   async function handleUpdateProductStatus() {
     try {
@@ -136,17 +142,26 @@ export function MyAnnouncement() {
     [productInfo.price],
   )
 
+  function handleGoToEditAnnouncement() {
+    navigation.navigate('CreateAnnouncement', { productInfo })
+  }
+
   if (isLoadingInfo) return <Loading />
 
   return (
     <VStack flex={1}>
-      <ScrollView showsVerticalScrollIndicator={false} flex={1} pt={16}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        flex={1}
+        _contentContainerStyle={{ pb: 16 }}
+        pt={16}
+      >
         <VStack pb={6}>
           <VStack px={6} pb={3}>
             <Header
               hasBackButton
               rightIcon={PencilSimpleLine}
-              onPressRightIcon={() => {}}
+              onPressRightIcon={handleGoToEditAnnouncement}
             />
           </VStack>
 
@@ -163,7 +178,7 @@ export function MyAnnouncement() {
                 borderWidth={2}
                 borderColor="blue.300"
                 alt="Imagem do usuário"
-                photo={`http://127.0.0.1:3333/images/${user.avatar}`}
+                photo={`${api.defaults.baseURL}/images/${user.avatar}`}
               />
               <Text fontFamily="body" fontSize="sm" color="gray.100" ml={2}>
                 {user.name}

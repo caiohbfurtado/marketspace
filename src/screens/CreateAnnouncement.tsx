@@ -11,7 +11,11 @@ import {
 import { Header } from '@components/Header'
 import { AddImageButton } from '../components/AddImageButton'
 import { Input } from '../components/Input'
-import { useFocusEffect, useNavigation } from '@react-navigation/native'
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native'
 import { AppNavigatorRoutesProps } from '../routes/app.routes'
 import { FixedButtons } from '../components/FixedButtons'
 import * as ImagePicker from 'expo-image-picker'
@@ -34,6 +38,8 @@ import { Checkbox } from '../components/Checkbox'
 import { Radio } from '../components/Radio'
 import { Switch } from '../components/Switch'
 import { InputMask } from '../components/InputMask'
+import { ProductDTO } from '../dtos/ProductDTO'
+import { api } from '../services/api'
 
 LogBox.ignoreLogs([
   'We can not support a function callback. See Github Issues for details https://github.com/adobe/react-spectrum/issues/2320',
@@ -62,8 +68,21 @@ const createAnnouncementSchema = yup.object({
     .required('Escolha pelo menos um método de pagamento'),
 })
 
+export type PhotoInfo = {
+  path: string
+  isLocal: boolean
+  id?: string
+}
+
+type RouteParams = {
+  productInfo?: ProductDTO
+  isNewProduct?: boolean
+}
+
 export function CreateAnnouncement() {
   const { navigate } = useNavigation<AppNavigatorRoutesProps>()
+  const route = useRoute()
+  const { productInfo, isNewProduct } = (route?.params as RouteParams) ?? {}
   const toast = useToast()
   const [productPhotoIsLoading, setProductPhotoIsLoading] = useState(false)
   const [isLoadingSubmit, setIsLoadingSubmit] = useState(false)
@@ -71,6 +90,11 @@ export function CreateAnnouncement() {
   const [productInfoPhotos, setProductInfoPhotos] = useState<
     ImagePicker.ImagePickerAsset[]
   >([])
+  const [removedImagesId, setRemovedImagesId] = useState<string[]>([])
+  const [productInfoUriPhotos, setProductInfoUriPhotos] = useState<PhotoInfo[]>(
+    [],
+  )
+
   const {
     control,
     handleSubmit,
@@ -84,34 +108,29 @@ export function CreateAnnouncement() {
 
   useFocusEffect(
     useCallback(() => {
-      clearErrors()
-    }, [clearErrors]),
-  )
+      if (productInfo?.id) {
+        reset({
+          accept_trade: productInfo.accept_trade,
+          description: productInfo.description,
+          is_new: productInfo.is_new ? 'is_new' : 'is_not_new',
+          name: productInfo.name,
+          payment_methods: productInfo.payment_methods.map(({ key }) => key),
+          price: String(productInfo.price),
+        })
 
-  function handleCreateAnnouncement(data: FormDataProps) {
-    setIsLoadingSubmit(true)
-    if (productInfoPhotos.length === 0) {
-      throw new AppError('Insira pelo menos uma imagem.')
-    }
+        setProductInfoUriPhotos(
+          productInfo.product_images.map(({ path, id }) => ({
+            path,
+            id,
+            isLocal: false,
+          })),
+        )
+        setRemovedImagesId([])
+        setProductInfoPhotos([])
+        return
+      }
 
-    const { description, is_new, name, payment_methods, price, accept_trade } =
-      data
-
-    const newProduct = {
-      name,
-      description,
-      is_new: is_new === 'is_new',
-      price: Number(price),
-      payment_methods,
-      accept_trade,
-    }
-
-    navigate('PreviewAnnouncement', {
-      productInfo: {
-        ...newProduct,
-        images: productInfoPhotos,
-      },
-      reset: () => {
+      if (isNewProduct) {
         reset({
           accept_trade: false,
           description: '',
@@ -121,9 +140,65 @@ export function CreateAnnouncement() {
           price: undefined,
         })
         setProductInfoPhotos([])
-      },
-    })
-    setIsLoadingSubmit(false)
+        setProductInfoUriPhotos([])
+      }
+
+      setErrorImageMessage('')
+      clearErrors()
+    }, [clearErrors, productInfo, reset, isNewProduct]),
+  )
+
+  function handleCreateAnnouncement(data: FormDataProps) {
+    try {
+      setIsLoadingSubmit(true)
+      if (productInfoPhotos.length === 0 && !productInfo?.id) {
+        throw new AppError('Insira pelo menos uma imagem.')
+      }
+
+      const {
+        description,
+        is_new,
+        name,
+        payment_methods,
+        price,
+        accept_trade,
+      } = data
+
+      const newProduct = {
+        name,
+        description,
+        is_new: is_new === 'is_new',
+        price: Number(price),
+        payment_methods,
+        accept_trade,
+      }
+
+      navigate('PreviewAnnouncement', {
+        productInfo: {
+          ...newProduct,
+          images: productInfoPhotos,
+          id: productInfo?.id,
+        },
+        reset: () => {
+          reset({
+            accept_trade: false,
+            description: '',
+            is_new: '' as 'is_new',
+            name: '',
+            payment_methods: [],
+            price: undefined,
+          })
+          setProductInfoPhotos([])
+          setProductInfoUriPhotos([])
+        },
+        removedImages: removedImagesId,
+        isNewProduct: !productInfo?.id,
+        imagesUri: productInfoUriPhotos,
+      })
+    } catch (error) {
+    } finally {
+      setIsLoadingSubmit(false)
+    }
   }
 
   function handleOnSubmit() {
@@ -167,6 +242,10 @@ export function CreateAnnouncement() {
           )
         }
 
+        setProductInfoUriPhotos((oldValue) => [
+          ...oldValue,
+          { path: photo.uri, isLocal: true },
+        ])
         setProductInfoPhotos((oldValue) => [...oldValue, photo])
       }
     } catch (error) {
@@ -188,9 +267,19 @@ export function CreateAnnouncement() {
     }
   }
 
-  function handleRemoveImage(index: number) {
-    setProductInfoPhotos((oldValue) =>
-      oldValue.filter((_, photoIndex) => photoIndex !== index),
+  function handleRemoveImage(path: string, isLocal: boolean, photoId: string) {
+    if (isLocal) {
+      setProductInfoPhotos((oldValue) =>
+        oldValue.filter((currentPath) => currentPath.uri !== path),
+      )
+    }
+
+    if (photoId) {
+      setRemovedImagesId((prevState) => [...prevState, photoId])
+    }
+
+    setProductInfoUriPhotos((oldValue) =>
+      oldValue.filter((currentPath) => currentPath.path !== path),
     )
   }
 
@@ -203,7 +292,9 @@ export function CreateAnnouncement() {
         <VStack onStartShouldSetResponder={() => true} flex={1} bg="gray.600">
           <ScrollView px={6} pt={16} showsVerticalScrollIndicator={false}>
             <View onStartShouldSetResponder={() => true}>
-              <Header title="Criar anúncio" />
+              <Header
+                title={`${productInfo?.id ? 'Editar' : 'Criar'} anúncio`}
+              />
               <VStack>
                 <VStack mt={6} pb={32}>
                   {renderTitle('Imagens')}
@@ -221,25 +312,35 @@ export function CreateAnnouncement() {
 
                   <HStack>
                     {!productPhotoIsLoading ? (
-                      productInfoPhotos.map((photoInfo, index) => (
+                      productInfoUriPhotos.map((photoInfo, index) => (
                         <ProductImage
                           key={String(index)}
-                          photo={photoInfo.uri}
+                          photo={
+                            photoInfo.isLocal
+                              ? photoInfo.path
+                              : `${api.defaults.baseURL}/images/${photoInfo.path}`
+                          }
                           style={{ marginRight: 8 }}
-                          onRemoveImage={() => handleRemoveImage(index)}
+                          onRemoveImage={() =>
+                            handleRemoveImage(
+                              photoInfo.path,
+                              photoInfo.isLocal,
+                              photoInfo.id!,
+                            )
+                          }
                         />
                       ))
                     ) : (
                       <Loading />
                     )}
 
-                    {(productInfoPhotos.length === 0 ||
-                      productInfoPhotos.length < 3) &&
+                    {(productInfoUriPhotos.length === 0 ||
+                      productInfoUriPhotos.length < 3) &&
                       !productPhotoIsLoading && (
                         <AddImageButton onPress={handleProductsPhotoSelect} />
                       )}
                   </HStack>
-                  {productInfoPhotos.length === 0 && errorImageMessage && (
+                  {productInfoUriPhotos.length === 0 && errorImageMessage && (
                     <Text color="error.500">{errorImageMessage}</Text>
                   )}
 

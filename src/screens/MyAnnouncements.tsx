@@ -17,7 +17,7 @@ export function MyAnnouncements() {
   const [allProducts, setAllProducts] = useState<ProductDTO[]>([])
   const [selectedProducts, setSelectedProducts] = useState<ProductDTO[]>([])
   function handleGoToCreateAnnouncement() {
-    navigate('CreateAnnouncement')
+    navigate('CreateAnnouncement', { isNewProduct: true })
   }
 
   function handleGoToAnnouncement(id: string) {

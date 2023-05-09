@@ -11,16 +11,62 @@ import {
 import { Header } from '@components/Header'
 import { AddImageButton } from '../components/AddImageButton'
 import { Input } from '../components/Input'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import { AppNavigatorRoutesProps } from '../routes/app.routes'
 import { FixedButtons } from '../components/FixedButtons'
+import { useEffect, useState } from 'react'
+import { Loading } from '../components/Loading'
+import { ProductDTO } from '../dtos/ProductDTO'
+import { Controller, useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as yup from 'yup'
+
+type FormDataProps = {
+  name: string
+  description: string
+  is_new: 'is_new' | 'is_not_new'
+  price: string
+  payment_methods: string[]
+  accept_trade: boolean
+}
+
+const editAnnouncementSchema = yup.object({
+  name: yup.string().required('Título obrigatório'),
+  description: yup.string().required('Descrição obrigatória'),
+  is_new: yup.string().required('Condição do produto obrigatória'),
+  price: yup
+    .string()
+    .required('Preço obrigatório')
+    .not(['0'], 'Preço obrigatório'),
+  payment_methods: yup
+    .array()
+    .min(1, 'Escolha pelo menos um método de pagamento')
+    .required('Escolha pelo menos um método de pagamento'),
+})
+
+type RouteParams = {
+  productInfo: ProductDTO
+}
 
 export function EditAnnouncement() {
+  const route = useRoute()
+  const { productInfo } = route.params as RouteParams
   const { navigate } = useNavigation<AppNavigatorRoutesProps>()
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<FormDataProps>({
+    defaultValues: { accept_trade: false },
+    resolver: yupResolver(editAnnouncementSchema),
+  })
 
-  function handleSubmit() {
-    navigate('PreviewAnnouncement')
-  }
+  console.log(productInfo)
+
+  // function handleSubmitForm() {
+  //   navigate('PreviewAnnouncement')
+  // }
 
   function renderTitle(title: string) {
     return (
@@ -29,6 +75,21 @@ export function EditAnnouncement() {
       </Heading>
     )
   }
+
+  useEffect(() => {
+    reset({
+      accept_trade: productInfo.accept_trade,
+      name: productInfo.name,
+      description: productInfo.description,
+      price: String(productInfo.price),
+    })
+  }, [
+    productInfo.accept_trade,
+    productInfo.description,
+    productInfo.name,
+    productInfo.price,
+    reset,
+  ])
 
   return (
     <VStack flex={1} bg="gray.600">
@@ -143,7 +204,7 @@ export function EditAnnouncement() {
         rightButton={{
           title: 'Avançar',
           variant: 'dark',
-          onPress: handleSubmit,
+          // onPress: handleSubmit,
         }}
       />
     </VStack>

@@ -1,6 +1,7 @@
 import { Box, Center, FlatList, HStack, Image, Text } from 'native-base'
 import { useRef, useState } from 'react'
 import { ViewToken, useWindowDimensions } from 'react-native'
+import { Skeleton } from './Skeleton'
 
 type Props = {
   imagesUri: string[]
@@ -15,6 +16,7 @@ export function Carousel({
 }: Props) {
   const { width } = useWindowDimensions()
   const [inViewPort, setInViewPort] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
 
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 50,
@@ -32,6 +34,7 @@ export function Carousel({
 
   return (
     <Center w="full">
+      {isLoading && <Skeleton position="absolute" w={width} h={280} />}
       <FlatList
         data={imagesUri}
         nestedScrollEnabled
@@ -42,6 +45,12 @@ export function Carousel({
             w={width}
             h={280}
             alt={`Imagem ${index} do produto ${productName}`}
+            onLoadStart={() => {
+              setIsLoading(true)
+            }}
+            onLoadEnd={() => {
+              setIsLoading(false)
+            }}
           />
         )}
         pagingEnabled
@@ -50,21 +59,23 @@ export function Carousel({
         viewabilityConfig={viewabilityConfig.current}
       />
 
-      <HStack position="absolute" bottom={0.5} mx={0.5}>
-        {imagesUri.map((_, index) => (
-          <Box
-            key={String(index)}
-            flex={1}
-            h={1}
-            mr={index === imagesUri.length - 1 ? 0 : 1}
-            backgroundColor="gray.700"
-            borderRadius="full"
-            opacity={index !== inViewPort ? 0.5 : 0.75}
-          />
-        ))}
-      </HStack>
+      {!isLoading && (
+        <HStack position="absolute" bottom={0.5} mx={0.5}>
+          {imagesUri.map((_, index) => (
+            <Box
+              key={String(index)}
+              flex={1}
+              h={1}
+              mr={index === imagesUri.length - 1 ? 0 : 1}
+              backgroundColor="gray.700"
+              borderRadius="full"
+              opacity={index !== inViewPort ? 0.5 : 0.75}
+            />
+          ))}
+        </HStack>
+      )}
 
-      {deactivate && (
+      {deactivate && !isLoading && (
         <Center
           position="absolute"
           backgroundColor="gray.100"

@@ -3,8 +3,10 @@ import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { Badge } from './Badge'
 import { UserPhoto } from './UserPhoto'
 import { ProductDTO } from '../dtos/ProductDTO'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { priceFormat } from '../utils/priceFormat'
+import { api } from '../services/api'
+import { Skeleton } from './Skeleton'
 
 type Props = TouchableOpacityProps & {
   product: ProductDTO
@@ -12,21 +14,31 @@ type Props = TouchableOpacityProps & {
 }
 
 export function ProductCard({ product, isUser = false, ...rest }: Props) {
+  const [isLoading, setIsLoading] = useState(true)
   const priceFormatted = useMemo(() => {
     return priceFormat(product?.price)
   }, [product?.price])
 
   return (
     <TouchableOpacity style={{ width: 160, marginBottom: 24 }} {...rest}>
+      {isLoading && (
+        <Skeleton borderRadius={6} position="absolute" w={40} h={24} />
+      )}
       <Image
         source={{
-          uri: `http://127.50.100.1:3333/images/${product.product_images[0].path}`,
+          uri: `${api.defaults.baseURL}/images/${product.product_images[0].path}`,
         }}
         w={40}
         h={24}
         alt="Imagem do produto"
         borderRadius={6}
         resizeMode="cover"
+        onLoadStart={() => {
+          setIsLoading(true)
+        }}
+        onLoadEnd={() => {
+          setIsLoading(false)
+        }}
       />
 
       <Box position="absolute" w="full" p={1}>
@@ -37,7 +49,7 @@ export function ProductCard({ product, isUser = false, ...rest }: Props) {
               borderColor="gray.700"
               size={6}
               alt="Foto do usuário"
-              photo={`http://127.0.0.1:3333/images/${product.user.avatar}`}
+              photo={`${api.defaults.baseURL}/images/${product.user.avatar}`}
             />
           )}
           <Badge title={product?.is_new ? 'new' : 'used'} />
@@ -64,7 +76,7 @@ export function ProductCard({ product, isUser = false, ...rest }: Props) {
         </HStack>
       </VStack>
 
-      {!product.is_active && isUser && (
+      {!product.is_active && isUser && !isLoading && (
         <Center
           position="absolute"
           backgroundColor="gray.100"

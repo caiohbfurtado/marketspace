@@ -6,7 +6,7 @@ import { useTheme } from 'native-base'
 import { House, Tag, SignOut } from 'phosphor-react-native'
 import { Fragment } from 'react'
 import { Platform, TouchableOpacity } from 'react-native'
-import { CreateAnnouncement } from '../screens/CreateAnnouncement'
+import { CreateAnnouncement, PhotoInfo } from '../screens/CreateAnnouncement'
 import * as ImagePicker from 'expo-image-picker'
 
 import { Home } from '../screens/Home'
@@ -16,10 +16,12 @@ import { EditAnnouncement } from '../screens/EditAnnouncement'
 import { useAuth } from '../hooks/useAuth'
 import { MyAnnouncement } from '../screens/MyAnnouncement'
 import { Announcement } from '../screens/Announcement'
+import { ProductDTO } from '../dtos/ProductDTO'
 
 const { Navigator, Screen } = createBottomTabNavigator()
 
 type ProductInfoProps = {
+  id?: string
   images: ImagePicker.ImagePickerAsset[]
   name: string
   description: string
@@ -32,13 +34,19 @@ type ProductInfoProps = {
 type AppRoutesProps = {
   Home: undefined
   MyAnnouncements: undefined
-  CreateAnnouncement: undefined
+  CreateAnnouncement: {
+    productInfo?: ProductDTO
+    isNewProduct?: boolean
+  }
   PreviewAnnouncement: {
+    isNewProduct: boolean
     productInfo: ProductInfoProps
     reset: () => void
+    removedImages?: string[]
+    imagesUri: PhotoInfo[]
   }
   EditAnnouncement: {
-    id: string
+    productInfo: ProductDTO
   }
   MyAnnouncement: {
     productId: string
